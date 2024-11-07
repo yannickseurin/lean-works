@@ -3,8 +3,8 @@ Some results about negligible functions (https://en.wikipedia.org/wiki/Negligibl
 Inspired from https://github.com/JoeyLupo/cryptolib/blob/main/src/negligible.lean
 -/
 
-import Mathlib.Tactic
 import Mathlib.Data.Real.Basic
+import Mathlib.Tactic
 
 def negligible (f : ℕ → ℝ) :=
   ∀ c > 0, ∃ n₀, ∀ n,
