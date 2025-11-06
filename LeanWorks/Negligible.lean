@@ -39,16 +39,12 @@ lemma negl_add_aux {f : ℕ → ℝ} (hf : negligible f):
   have : 1 / (n : ℝ) ^ c / 2 = 1 / (n ^ c * 2) := by
     exact div_div 1 ((n : ℝ) ^ c) 2
   rw [this]
-  apply (div_le_div_left _ _ _).mpr
-  · have : (n : ℝ) ^ (c + 1) = n ^ c * n := rfl
-    rw [this]
-    apply (mul_le_mul_left npowpos).mpr twolen
-  · norm_num
-  · exact npowpos'
-  apply mul_pos
-  · apply pow_pos
-    exact lt_of_lt_of_le two_pos twolen
-  norm_num
+  simp only [one_div]
+  apply inv_anti₀
+  · positivity
+  have : (n : ℝ) ^ (c + 1) = n ^ c * n := rfl
+  rw [this]
+  exact (mul_le_mul_iff_right₀ npowpos).mpr twolen
 
 -- The sum of two negligible functions is negligible
 lemma negl_add {f g : ℕ → ℝ} :
@@ -62,7 +58,7 @@ lemma negl_add {f g : ℕ → ℝ} :
   intro n hn
   simp only [Pi.add_apply]
   calc |f n + g n|
-    _ ≤ |f n| + |g n| := abs_add (f n) (g n)
+    _ ≤ |f n| + |g n| := abs_add_le (f n) (g n)
     _ ≤ 1 / n ^ c / 2 + 1 / n ^ c / 2 := by
       apply add_le_add
       · apply hnf n
@@ -113,7 +109,7 @@ lemma pow_mul_negl {f : ℕ → ℝ} {k : ℕ} (hf : negligible f) :
       left
       exact Nat.abs_cast n
     _ ≤ nn * (1 / nn ^ (c + 1)) := by
-      apply (mul_le_mul_left _).mpr
+      apply (mul_le_mul_iff_right₀ _).mpr
       · exact hn₀ n (le_of_max_le_left hn)
       exact Nat.cast_pos'.mpr npos
     _ = 1 / nn ^ c := by
@@ -142,7 +138,7 @@ lemma sq_le_two_pow : ∀ n ≥ 4, n ^ 2 ≤ 2 ^ n := by
       linarith
     _ = 2 * n ^ 2 := by ring
     _ ≤ 2 * 2 ^ n := by linarith
-    _ = 2 ^ (n + 1) := by exact Eq.symm Nat.pow_succ'
+    _ = 2 ^ (n + 1) := Eq.symm Nat.pow_succ'
 
 /-
 Proof that exponential grows faster than polynomial.
@@ -171,9 +167,7 @@ lemma pow_le_exp (c : ℕ) :
     apply Nat.mod_lt
     linarith
   show n ^ (c + 1) ≤ 2 ^ n
-  have : 2 ≠ 0 := by exact Ne.symm (Nat.zero_ne_add_one 1)
-  apply le_of_pow_le_pow_left this
-  · positivity
+  apply (Nat.pow_le_pow_iff_left two_ne_zero).mp
   calc (n ^ (c + 1)) ^ 2
     _ = n ^ 2 * (n ^ c) ^ 2 := by ring
     _ ≤ n ^ 2 * ((4 * (n / 4 + 1)) ^ c) ^ 2 := by
@@ -209,9 +203,8 @@ lemma pow_le_exp (c : ℕ) :
       exact hn₀ (n / 4 + 1) hn'
     _ ≤ 2 ^ n * (2 ^ (4 * c) * 2 ^ (n / 2 + 2)) := by
       rw [← Nat.pow_mul]
-      simp only [Nat.ofNat_pos, pow_pos, mul_le_mul_left]
-      apply Nat.pow_le_pow_of_le_right
-      · norm_num
+      simp only [Nat.ofNat_pos, pow_pos, mul_le_mul_iff_right₀]
+      apply (Nat.pow_le_pow_iff_right (by norm_num)).mpr
       rw [add_mul, one_mul, add_le_add_iff_right, mul_comm]
       nth_rw 2 [← Nat.div_add_mod n 4]
       apply (Nat.le_div_iff_mul_le _).mpr
@@ -220,12 +213,12 @@ lemma pow_le_exp (c : ℕ) :
       norm_num
     _ = 2 ^ n * 2 ^ (4 * c + n / 2 + 2) := by ring
     _ ≤ 2 ^ n * 2 ^ n := by
-      simp only [Nat.ofNat_pos, pow_pos, mul_le_mul_left]
-      apply Nat.pow_le_pow_of_le_right
-      · norm_num
-      apply (mul_le_mul_iff_of_pos_left two_pos).mp
-      rw [mul_add, mul_add]
-      linarith [Nat.mul_div_le n 2]
+      simp only [Nat.ofNat_pos, pow_pos, mul_le_mul_iff_right₀]
+      apply (Nat.pow_le_pow_iff_right (by norm_num)).mpr
+      omega
+      -- apply (mul_le_mul_iff_of_pos_left two_pos).mp
+      -- rw [mul_add, mul_add]
+      -- linarith [Nat.mul_div_le n 2]
     _ = (2 ^ n) ^ 2 := by ring
 
 lemma inv_exp_negl : negligible fun n ↦ (1 : ℝ) / 2 ^ n := by
@@ -241,9 +234,9 @@ lemma inv_exp_negl : negligible fun n ↦ (1 : ℝ) / 2 ^ n := by
   rw [this]
   repeat
     rw [one_div]
-  apply inv_le_inv_of_le
+  apply inv_anti₀
   · apply pow_pos
-    have : 1 ≤ n := by exact le_of_max_le_right hn
+    have : 1 ≤ n := le_of_max_le_right hn
     positivity
   norm_cast
   exact hn₀ n (le_of_max_le_left hn)
@@ -323,7 +316,7 @@ theorem unif_negl_of_pw_negl (F : fun_fam I) :
     intro j_le_c
     cases c with
     | zero =>
-      have : j = 0 := by exact Nat.eq_zero_of_le_zero j_le_c
+      have : j = 0 := Nat.eq_zero_of_le_zero j_le_c
       rw [this]
       exact Nat.le_refl (N' 0 0)
     | succ c =>
@@ -383,7 +376,7 @@ theorem unif_negl_of_pw_negl (F : fun_fam I) :
   -- also, `T' n` is a subset of `T' (n + 1)`
   have T'_subset (n : ℕ) : T' n ⊆ T' (n + 1) := by
     simp [T']
-    apply Finset.union_subset_union_left
+    apply Finset.insert_subset_insert 0
     apply Set.Finite.toFinset_subset_toFinset.mpr
     simp [T]
     tauto
@@ -391,9 +384,9 @@ theorem unif_negl_of_pw_negl (F : fun_fam I) :
     intro a a_mem
     simp [T, T'] at a_mem
     rcases a_mem with h | h
-    · contrapose! h
-      exact claim₂'' c a h
-    linarith
+    · linarith
+    contrapose! h
+    exact claim₂'' c a h
   -- define function `γ` as `γ n = max {c : ℕ | φ(c) ≤ n } ∪ { 0 }`
   -- this is function `g` in Bellare's paper
   let γ (n : ℕ) : ℕ := (T' n).max' (T'_ne n)
@@ -413,9 +406,9 @@ theorem unif_negl_of_pw_negl (F : fun_fam I) :
       exact Finset.max'_mem (T' n) (T'_ne n)
     simp [T, T'] at this
     rcases this with h | h
-    · assumption
-    rw [h]
-    simpa [φ]
+    · rw [h]
+      simpa [φ]
+    assumption
   have claim₅ (c : ℕ) : γ (φ c) = c := by
     simp [γ]
     apply Nat.le_antisymm
@@ -493,14 +486,11 @@ theorem unif_negl_of_pw_negl (F : fun_fam I) :
       trans γ (φ c)
       · exact le_of_eq (claim₅ c).symm
       exact claim₃' (φ c) n (le_of_max_le_left (le_of_max_le_left hn))
-    have : (n : ℝ) ^ c ≤ (n : ℝ) ^ (γ n) := by
-      apply pow_le_pow_right
-      · exact ncast_ge_one
-      assumption
-    apply inv_le_inv_of_le
-    · have : 0 < (n : ℝ) := by
-        linarith
-      exact pow_pos this c
+    apply inv_anti₀
+    · positivity
+    norm_cast
+    apply Nat.pow_le_pow_right
+    · positivity [le_of_max_le_right hn]
     assumption
   -- finally, we have all we need to conclude
   exact ⟨δ, claim₇, claim₆⟩
