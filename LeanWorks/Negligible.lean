@@ -20,7 +20,7 @@ lemma zero_negl : negligible (fun _ => 0) := by
   norm_num
 
 -- An auxiliary lemma
-lemma negl_add_aux {f : ℕ → ℝ} (hf : negligible f):
+lemma negl_add_aux {f : ℕ → ℝ} (hf : negligible f) :
     ∀ c : ℕ, ∃ n₀, ∀ n, n₀ ≤ n → |f n| ≤ (1 / (n ^ c)) / 2 := by
   intro c
   rcases hf (c + 1) with ⟨n₀, hn₀⟩
@@ -82,47 +82,49 @@ lemma negl_of_bounded_negl {f g : ℕ → ℝ} (hg : negligible g) :
 -- Multiplying a negligible function by a monomial yields a negligible function
 lemma pow_mul_negl {f : ℕ → ℝ} {k : ℕ} (hf : negligible f) :
     negligible fun n ↦ n ^ k * (f n) := by
-  induction' k with k ih
-  · have : (fun n ↦ n ^ 0 * (f n)) = f := by
+  induction k with
+  | zero =>
+    have : (fun n ↦ n ^ 0 * (f n)) = f := by
       ext
       rw [pow_zero, one_mul]
     rw [this]
     exact hf
-  unfold negligible
-  dsimp
-  intro c
-  rcases ih (c + 1) with ⟨n₀, hn₀⟩
-  dsimp at hn₀
-  use max n₀ 1
-  intro n hn
-  have npos : 0 < n := by
-    exact lt_of_lt_of_le (one_pos) (le_of_max_le_right hn)
-  let nn := (n : ℝ)
-  calc |nn ^ (k + 1) * f n|
-    _ = |nn * nn ^ k * f n| := by
-      congr
-      exact pow_succ' nn k
-    _ = |nn * (nn ^ k * f n)| := by rw [mul_assoc]
-    _ = |nn| * |nn ^ k * f n| := abs_mul nn (nn ^ k * f n)
-    _ = nn * |nn ^ k * f n| := by
-      apply mul_eq_mul_right_iff.mpr
-      left
-      exact Nat.abs_cast n
-    _ ≤ nn * (1 / nn ^ (c + 1)) := by
-      apply (mul_le_mul_iff_right₀ _).mpr
-      · exact hn₀ n (le_of_max_le_left hn)
-      exact Nat.cast_pos'.mpr npos
-    _ = 1 / nn ^ c := by
-      rw [mul_div, mul_one]
-      apply (div_eq_div_iff _ _).mpr
-      · rw [one_mul]
-        exact (pow_succ' nn c).symm
-      · apply ne_of_gt
+  | succ k ih =>
+    unfold negligible
+    dsimp
+    intro c
+    rcases ih (c + 1) with ⟨n₀, hn₀⟩
+    dsimp at hn₀
+    use max n₀ 1
+    intro n hn
+    have npos : 0 < n := by
+      exact lt_of_lt_of_le (one_pos) (le_of_max_le_right hn)
+    let nn := (n : ℝ)
+    calc |nn ^ (k + 1) * f n|
+      _ = |nn * nn ^ k * f n| := by
+        congr
+        exact pow_succ' nn k
+      _ = |nn * (nn ^ k * f n)| := by rw [mul_assoc]
+      _ = |nn| * |nn ^ k * f n| := abs_mul nn (nn ^ k * f n)
+      _ = nn * |nn ^ k * f n| := by
+        apply mul_eq_mul_right_iff.mpr
+        left
+        exact Nat.abs_cast n
+      _ ≤ nn * (1 / nn ^ (c + 1)) := by
+        apply (mul_le_mul_iff_right₀ _).mpr
+        · exact hn₀ n (le_of_max_le_left hn)
+        exact Nat.cast_pos'.mpr npos
+      _ = 1 / nn ^ c := by
+        rw [mul_div, mul_one]
+        apply (div_eq_div_iff _ _).mpr
+        · rw [one_mul]
+          exact (pow_succ' nn c).symm
+        · apply ne_of_gt
+          apply pow_pos
+          exact Nat.cast_pos'.mpr npos
+        apply ne_of_gt
         apply pow_pos
         exact Nat.cast_pos'.mpr npos
-      apply ne_of_gt
-      apply pow_pos
-      exact Nat.cast_pos'.mpr npos
 
 -- A useful lemma for proving `pow_le_exp`
 lemma sq_le_two_pow : ∀ n ≥ 4, n ^ 2 ≤ 2 ^ n := by
@@ -146,80 +148,78 @@ Inspired from https://eventuallyalmosteverywhere.wordpress.com/2013/04/05/expone
 -/
 lemma pow_le_exp (c : ℕ) :
     ∃ n₀, ∀ n, n₀ ≤ n → n ^ c ≤ 2 ^ n := by
-  induction' c with c ih
-  · use 1
+  induction c with
+  | zero =>
+    use 1
     intro n _
     rw [pow_zero]
     exact Nat.one_le_two_pow
-  rcases ih with ⟨n₀, hn₀⟩
-  use max (8 * c + 4) (max (4 * n₀) 4)
-  intro n hn
-  have nge : 4 ≤ n := le_of_max_le_right (le_of_max_le_right hn)
-  have nge' : 4 * n₀ ≤ n := le_of_max_le_left (le_of_max_le_right hn)
-  have nge'' : 8 * c + 4 ≤ n := le_of_max_le_left hn
-  have hn' : n₀ ≤ n / 4 + 1 := by
-    apply (mul_le_mul_iff_of_pos_left four_pos).mp
-    trans n
-    · exact nge'
-    nth_rw 1 [← Nat.div_add_mod n 4, mul_add, mul_one]
-    simp only [add_le_add_iff_left]
-    apply le_of_lt
-    apply Nat.mod_lt
-    linarith
-  show n ^ (c + 1) ≤ 2 ^ n
-  apply (Nat.pow_le_pow_iff_left two_ne_zero).mp
-  calc (n ^ (c + 1)) ^ 2
-    _ = n ^ 2 * (n ^ c) ^ 2 := by ring
-    _ ≤ n ^ 2 * ((4 * (n / 4 + 1)) ^ c) ^ 2 := by
-      apply mul_le_mul_of_nonneg_left
-      · apply (Nat.pow_le_pow_left _) 2
-        apply (Nat.pow_le_pow_left _) c
-        calc n
-          _ = 4 * (n / 4) + n % 4 := (Nat.div_add_mod n 4).symm
-          _ ≤ 4 * (n / 4) + 4 := by
-            apply le_of_lt
-            apply Nat.add_lt_add_left _ (4 * (n / 4))
-            apply Nat.mod_lt
-            linarith
-          _ = 4 * (n / 4 + 1) := by ring
-      positivity
-    _ = n ^ 2 * (4 ^ c * (n / 4 + 1) ^ c) ^ 2 := by rw [mul_pow]
-    _ = n ^ 2 * (4 ^ c) ^ 2 * ((n / 4 + 1) ^ c) ^ 2 := by ring
-    _ = n ^ 2 * 2 ^ (4 * c) * ((n / 4 + 1) ^ c) ^ 2 := by
-      have : (4 ^ c) ^ 2 = 2 ^ (4 * c) := by
-        have : 4 = 2 ^ 2 := by norm_num
-        nth_rw 1 [this]
-        rw [← Nat.pow_mul, ← Nat.pow_mul]
-        ring
-      rw [this]
-    _ = n ^ 2 * (2 ^ (4 * c) * ((n / 4 + 1) ^ c) ^ 2) := by ring
-    _ ≤ 2 ^ n * (2 ^ (4 * c) * ((n / 4 + 1) ^ c) ^ 2) := by
-      apply mul_le_mul_of_nonneg_right
-      · exact sq_le_two_pow n nge
-      positivity
-    _ ≤ 2 ^ n * (2 ^ (4 * c) * (2 ^ (n / 4 + 1)) ^ 2) := by
-      repeat apply Nat.mul_le_mul_left
-      apply Nat.pow_le_pow_left
-      exact hn₀ (n / 4 + 1) hn'
-    _ ≤ 2 ^ n * (2 ^ (4 * c) * 2 ^ (n / 2 + 2)) := by
-      rw [← Nat.pow_mul]
-      simp only [Nat.ofNat_pos, pow_pos, mul_le_mul_iff_right₀]
-      apply (Nat.pow_le_pow_iff_right (by norm_num)).mpr
-      rw [add_mul, one_mul, add_le_add_iff_right, mul_comm]
-      nth_rw 2 [← Nat.div_add_mod n 4]
-      apply (Nat.le_div_iff_mul_le _).mpr
-      · rw [mul_assoc, mul_comm (n / 4) 2, ← mul_assoc]
-        simp only [Nat.reduceMul, le_add_iff_nonneg_right, zero_le]
-      norm_num
-    _ = 2 ^ n * 2 ^ (4 * c + n / 2 + 2) := by ring
-    _ ≤ 2 ^ n * 2 ^ n := by
-      simp only [Nat.ofNat_pos, pow_pos, mul_le_mul_iff_right₀]
-      apply (Nat.pow_le_pow_iff_right (by norm_num)).mpr
-      omega
-      -- apply (mul_le_mul_iff_of_pos_left two_pos).mp
-      -- rw [mul_add, mul_add]
-      -- linarith [Nat.mul_div_le n 2]
-    _ = (2 ^ n) ^ 2 := by ring
+  | succ c ih =>
+    rcases ih with ⟨n₀, hn₀⟩
+    use max (8 * c + 4) (max (4 * n₀) 4)
+    intro n hn
+    have nge : 4 ≤ n := le_of_max_le_right (le_of_max_le_right hn)
+    have nge' : 4 * n₀ ≤ n := le_of_max_le_left (le_of_max_le_right hn)
+    have nge'' : 8 * c + 4 ≤ n := le_of_max_le_left hn
+    have hn' : n₀ ≤ n / 4 + 1 := by
+      apply (mul_le_mul_iff_of_pos_left four_pos).mp
+      trans n
+      · exact nge'
+      nth_rw 1 [← Nat.div_add_mod n 4, mul_add, mul_one]
+      simp only [add_le_add_iff_left]
+      apply le_of_lt
+      apply Nat.mod_lt
+      linarith
+    apply (Nat.pow_le_pow_iff_left two_ne_zero).mp
+    calc (n ^ (c + 1)) ^ 2
+      _ = n ^ 2 * (n ^ c) ^ 2 := by ring
+      _ ≤ n ^ 2 * ((4 * (n / 4 + 1)) ^ c) ^ 2 := by
+        apply mul_le_mul_of_nonneg_left
+        · apply (Nat.pow_le_pow_left _) 2
+          apply (Nat.pow_le_pow_left _) c
+          calc n
+            _ = 4 * (n / 4) + n % 4 := (Nat.div_add_mod n 4).symm
+            _ ≤ 4 * (n / 4) + 4 := by
+              apply le_of_lt
+              apply Nat.add_lt_add_left _ (4 * (n / 4))
+              apply Nat.mod_lt
+              linarith
+            _ = 4 * (n / 4 + 1) := by ring
+        positivity
+      _ = n ^ 2 * (4 ^ c * (n / 4 + 1) ^ c) ^ 2 := by rw [mul_pow]
+      _ = n ^ 2 * (4 ^ c) ^ 2 * ((n / 4 + 1) ^ c) ^ 2 := by ring
+      _ = n ^ 2 * 2 ^ (4 * c) * ((n / 4 + 1) ^ c) ^ 2 := by
+        have : (4 ^ c) ^ 2 = 2 ^ (4 * c) := by
+          have : 4 = 2 ^ 2 := by norm_num
+          nth_rw 1 [this]
+          rw [← Nat.pow_mul, ← Nat.pow_mul]
+          ring
+        rw [this]
+      _ = n ^ 2 * (2 ^ (4 * c) * ((n / 4 + 1) ^ c) ^ 2) := by ring
+      _ ≤ 2 ^ n * (2 ^ (4 * c) * ((n / 4 + 1) ^ c) ^ 2) := by
+        apply mul_le_mul_of_nonneg_right
+        · exact sq_le_two_pow n nge
+        positivity
+      _ ≤ 2 ^ n * (2 ^ (4 * c) * (2 ^ (n / 4 + 1)) ^ 2) := by
+        repeat apply Nat.mul_le_mul_left
+        apply Nat.pow_le_pow_left
+        exact hn₀ (n / 4 + 1) hn'
+      _ ≤ 2 ^ n * (2 ^ (4 * c) * 2 ^ (n / 2 + 2)) := by
+        rw [← Nat.pow_mul]
+        simp only [Nat.ofNat_pos, pow_pos, mul_le_mul_iff_right₀]
+        apply (Nat.pow_le_pow_iff_right (by norm_num)).mpr
+        rw [add_mul, one_mul, add_le_add_iff_right, mul_comm]
+        nth_rw 2 [← Nat.div_add_mod n 4]
+        apply (Nat.le_div_iff_mul_le _).mpr
+        · rw [mul_assoc, mul_comm (n / 4) 2, ← mul_assoc]
+          simp only [Nat.reduceMul, le_add_iff_nonneg_right, zero_le]
+        norm_num
+      _ = 2 ^ n * 2 ^ (4 * c + n / 2 + 2) := by ring
+      _ ≤ 2 ^ n * 2 ^ n := by
+        simp only [Nat.ofNat_pos, pow_pos, mul_le_mul_iff_right₀]
+        apply (Nat.pow_le_pow_iff_right (by norm_num)).mpr
+        omega
+      _ = (2 ^ n) ^ 2 := by ring
 
 lemma inv_exp_negl : negligible fun n ↦ (1 : ℝ) / 2 ^ n := by
   unfold negligible
@@ -270,14 +270,13 @@ theorem pw_negl_of_unif_negl (F : fun_fam I) :
   apply negl_of_bounded_negl hf
   exact h i
 
-open Classical
-
 variable [Countable I] [Nonempty I]
 
 -- The converse and more complicated direction:
 -- pointwise negligibility implies uniform negligibility
 theorem unif_negl_of_pw_negl (F : fun_fam I) :
     pw_negligible I F → unif_negligible I F := by
+  classical
   intro hF
   simp [pw_negligible, negligible] at hF
   -- we follow Bellare's proof very closely
@@ -346,11 +345,12 @@ theorem unif_negl_of_pw_negl (F : fun_fam I) :
   -- two direct consequences of `claim₂`
   -- that will be useful later on
   have claim₂' (c : ℕ) : c ≤ φ c := by
-    induction' c with c hc
-    · simp [φ]
-    trans φ c + 1
-    · linarith
-    exact Nat.le_max_right ((S (c + 1)).max' (S_ne (c + 1))) (φ c + 1)
+    induction c with
+    | zero => simp [φ]
+    | succ c ih =>
+      trans φ c + 1
+      · exact Nat.add_le_add_right ih 1
+      exact Nat.le_max_right ((S (c + 1)).max' (S_ne (c + 1))) (φ c + 1)
   have claim₂'' (c d : ℕ) : c < d → φ c < φ d := by
     apply Nat.le_induction
     · exact claim₂ c
@@ -451,7 +451,7 @@ theorem unif_negl_of_pw_negl (F : fun_fam I) :
       apply claim₃' at hn
       rwa [← claim₅ (s i)]
     trans δ n
-    exact hδ i n this
+    · exact hδ i n this
     exact le_abs_self (δ n)
   -- `δ` is negligible
   have claim₇ : negligible δ := by
@@ -481,7 +481,6 @@ theorem unif_negl_of_pw_negl (F : fun_fam I) :
         exact claim₁ i (γ n) n this n_ge
       rw [if_neg h']
       positivity
-    show ((n : ℝ) ^ γ n)⁻¹ ≤ ((n : ℝ) ^ c)⁻¹
     have c_le : c ≤ γ n := by
       trans γ (φ c)
       · exact le_of_eq (claim₅ c).symm
