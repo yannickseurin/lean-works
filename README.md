@@ -1,7 +1,7 @@
 # lean-works
 
 [![Lean Action CI](https://github.com/yannickseurin/lean-works/actions/workflows/lean_action_ci.yml/badge.svg)](https://github.com/yannickseurin/lean-works/actions/workflows/lean_action_ci.yml)
-![Dynamic Regex Badge](https://img.shields.io/badge/dynamic/regex?url=https://raw.githubusercontent.com/yannickseurin/lean-works/refs/heads/main/lean-toolchain&search=leanprover/lean4:(.*)&replace=$1&label=Lean4)
+![Dynamic Regex Badge](https://img.shields.io/badge/dynamic/regex?url=https://raw.githubusercontent.com/yannickseurin/lean-works/refs/heads/main/lean-toolchain&search=leanprover/lean4:(.*)&replace=$1&label=Lean4&link=https://github.com/leanprover/lean4)
 
 Experimenting with Lean 4.
 
