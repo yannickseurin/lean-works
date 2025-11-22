@@ -1,3 +1,8 @@
+/-
+Copyright (c) 2025 Yannick Seurin. All rights reserved.
+Released under MIT license as described in the file LICENSE.
+Authors: Yannick Seurin
+-/
 import Mathlib.Tactic
 
 /-!
@@ -6,13 +11,17 @@ General lemmas that could be ported to Mathlib, maybe...
 
 section Bijection
 
--- the n-fold product of a type
+/--
+The n-fold product of a type.
+-/
 def nfoldProd.{u} (α : Type u) : ℕ → Type u
   | 0     => PUnit
   | 1     => α
   | n + 2 => α × nfoldProd α (n + 1)
 
--- applying a function `f` coordinate-wise on an n-tuple
+/--
+The application of a function `f` coordinate-wise on an n-tuple.
+-/
 def nfoldMap.{u,v} {α : Type u} {β : Type v} (f : α → β) : (n : ℕ) → nfoldProd α n → nfoldProd β n
   | 0, _       => PUnit.unit
   | 1, x       => f x

@@ -1,13 +1,22 @@
 /-
+Copyright (c) 2025 Yannick Seurin. All rights reserved.
+Released under MIT license as described in the file LICENSE.
+Authors: Yannick Seurin
+-/
+import Mathlib.Data.Real.Basic
+import Mathlib.Tactic
+
+/-!
+# Negligible functions
+
 Some results about negligible functions (https://en.wikipedia.org/wiki/Negligible_function)
 Inspired from https://github.com/JoeyLupo/cryptolib/blob/main/src/negligible.lean
 -/
 
-import Mathlib.Data.Real.Basic
-import Mathlib.Tactic
-
--- A function is negligible if it approaches zero
--- faster than the inverse of any polynomial
+/--
+A function is negligible if it approaches zero
+faster than the inverse of any polynomial
+-/
 def negligible (f : ℕ → ℝ) :=
   ∀ c : ℕ, ∃ n₀, ∀ n, n₀ ≤ n → |f n| ≤ 1 / (n ^ c)
 
@@ -142,7 +151,7 @@ lemma sq_le_two_pow : ∀ n ≥ 4, n ^ 2 ≤ 2 ^ n := by
     _ ≤ 2 * 2 ^ n := by linarith
     _ = 2 ^ (n + 1) := Eq.symm Nat.pow_succ'
 
-/-
+/--
 Proof that exponential grows faster than polynomial.
 Inspired from https://eventuallyalmosteverywhere.wordpress.com/2013/04/05/exponentials-kill-polynomials/
 -/
