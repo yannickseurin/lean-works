@@ -4,5 +4,5 @@
 import LeanWorks.Negligible
 -- import LeanWorks.Pke
 -- import LeanWorks.PkeStruct
--- import LeanWorks.Probability
+import LeanWorks.Probability
 import LeanWorks.ToMathlib
