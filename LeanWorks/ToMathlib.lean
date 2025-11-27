@@ -11,10 +11,12 @@ General lemmas that could be ported to Mathlib, maybe...
 
 section Bijection
 
+universe u v
+
 /--
 The n-fold product of a type.
 -/
-def nfoldProd.{u} (α : Type u) : ℕ → Type u
+def nfoldProd (α : Type u) : ℕ → Type u
   | 0     => PUnit
   | 1     => α
   | n + 2 => α × nfoldProd α (n + 1)
@@ -22,12 +24,12 @@ def nfoldProd.{u} (α : Type u) : ℕ → Type u
 /--
 The application of a function `f` coordinate-wise on an n-tuple.
 -/
-def nfoldMap.{u,v} {α : Type u} {β : Type v} (f : α → β) : (n : ℕ) → nfoldProd α n → nfoldProd β n
+def nfoldMap {α : Type u} {β : Type v} (f : α → β) : (n : ℕ) → nfoldProd α n → nfoldProd β n
   | 0, _       => PUnit.unit
   | 1, x       => f x
   | n + 2, (x, xs) => (f x, nfoldMap f (n + 1) xs)
 
-variable {α β : Type} {f : α → β}
+variable {α : Type u} {β : Type v} {f : α → β}
 
 theorem Function.bijective_iff_has_inverse' :
     Bijective f ↔ ∃ g : β → α, (∀ x : α, ∀ y : β, y = f x ↔ x = g y) := by
@@ -49,7 +51,7 @@ theorem Function.bijective_iff_has_inverse' :
     have : f x = f x ↔ x = g (f x) := hg x (f x)
     tauto
   intro y
-  have : g y = g y ↔ y = f (g y) := by exact iff_comm.mp (hg (g y) y)
+  have : g y = g y ↔ y = f (g y) := iff_comm.mp (hg (g y) y)
   tauto
 
 theorem Function.bijective_nfold (n : ℕ) (hf : Function.Bijective f) :
@@ -57,7 +59,7 @@ theorem Function.bijective_nfold (n : ℕ) (hf : Function.Bijective f) :
   apply (Function.bijective_iff_existsUnique (nfoldMap f n)).mpr
   cases n with
     | zero =>
-      exact fun b ↦ existsUnique_eq
+      simp [nfoldProd, nfoldMap]
     | succ n =>
       induction n with
       | zero =>
