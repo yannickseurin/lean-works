@@ -77,7 +77,7 @@ theorem Function.bijective_nfold (n : ℕ) (hf : Function.Bijective f) :
 
 end Bijection
 
-section ENNRealCast
+section ENNReal
 
 theorem ENNReal.mul_natCast {a b : ℕ} : (a : ENNReal) * (b : ENNReal) = (↑(a * b) : ENNReal) := by
   exact Eq.symm (Nat.cast_mul a b)
@@ -90,4 +90,77 @@ theorem ENNReal.mul_inv_natCast {a b : ℕ} :
   left
   exact ENNReal.natCast_ne_top a
 
-end ENNRealCast
+theorem ENNReal.inv_mul_cancel_natCast {a : ℕ} (ha : a ≠ 0) :
+     (a : ENNReal)⁻¹ * (a : ENNReal) = 1 := by
+  apply ENNReal.inv_mul_cancel
+  · exact Nat.cast_ne_zero.mpr ha
+  exact natCast_ne_top a
+
+theorem ENNReal.mul_inv_cancel_natCast {a : ℕ} (ha : a ≠ 0) :
+     (a : ENNReal) * (a : ENNReal)⁻¹  = 1 := by
+  apply ENNReal.mul_inv_cancel
+  · exact Nat.cast_ne_zero.mpr ha
+  exact natCast_ne_top a
+
+end ENNReal
+
+section Group
+
+instance {α : Type u} [Finite α] [Nonempty α] : NeZero (Nat.card α) where
+  out := Nat.card_ne_zero.mpr ⟨inferInstance, inferInstance⟩
+
+instance {G : Type} [CommGroup G] (g : G)
+    (g_gen : ∀ (x : G), x ∈ Subgroup.zpowers g) : IsCyclic G where
+  exists_zpow_surjective := ⟨g, g_gen⟩
+
+theorem g_order {G : Type} [Group G]
+    (g : G) (g_gen : ∀ (x : G), x ∈ Subgroup.zpowers g) :
+    orderOf g = Nat.card G :=
+  orderOf_eq_card_of_forall_mem_zpowers g_gen
+
+theorem zpow_val_add {G : Type} [Group G] [Fintype G]
+    (g : G) (g_gen : ∀ (x : G), x ∈ Subgroup.zpowers g)
+    (a b : ZMod (Nat.card G)) :
+    g ^ (a + b).val = g ^ (a.val + b.val) := by
+  apply pow_eq_pow_iff_modEq.mpr
+  rw [g_order g g_gen]
+  unfold Nat.ModEq
+  have : (a + b).val % (Nat.card G) = (a + b).val :=
+    Nat.mod_eq_of_lt (ZMod.val_lt (a + b))
+  rw [this]
+  exact ZMod.val_add a b
+
+theorem zpow_val_mul {G : Type} [Group G] [Fintype G]
+    (g : G) (g_gen : ∀ (x : G), x ∈ Subgroup.zpowers g)
+    (a b : ZMod (Nat.card G)) :
+    g ^ (a * b).val = g ^ (a.val * b.val) := by
+  apply pow_eq_pow_iff_modEq.mpr
+  rw [g_order g g_gen]
+  unfold Nat.ModEq
+  have : (a * b).val % (Nat.card G) = (a * b).val :=
+    Nat.mod_eq_of_lt (ZMod.val_lt (a * b))
+  rw [this]
+  exact ZMod.val_mul a b
+
+/--
+Exponentiation in a cyclic group is bijective
+-/
+theorem group_exp_bijective {G : Type} [Group G] [Fintype G]
+    (g : G) (g_gen : ∀ (x : G), x ∈ Subgroup.zpowers g) :
+    Function.Bijective fun (x : ZMod (Nat.card G))↦ g ^ x.val := by
+  constructor
+  · simp [Function.Injective]
+    intro a₁ a₂ h
+    rw [← ZMod.natCast_zmod_val a₁, ← ZMod.natCast_zmod_val a₂, ZMod.natCast_eq_natCast_iff]
+    have : a₁.val ≡ a₂.val [MOD orderOf g] := pow_eq_pow_iff_modEq.mp h
+    rw [g_order g g_gen] at this
+    exact this
+  simp [Function.Surjective]
+  intro b
+  rcases g_gen b with ⟨z, rfl⟩
+  dsimp
+  use (z : ZMod (Nat.card G))
+  rw [← zpow_natCast g (z : ZMod (Nat.card G)).val, ZMod.val_intCast z]
+  rw [← zpow_mod_orderOf g z, g_order g g_gen]
+
+end Group
