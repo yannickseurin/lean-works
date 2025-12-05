@@ -9,6 +9,20 @@ import Mathlib.Tactic
 General lemmas that could be ported to Mathlib, maybe...
 -/
 
+/-
+This instance allows to infer `NeZero (Nat.card G)` when working with a Fintype group
+See https://leanprover.zulipchat.com/#narrow/channel/113489-new-members/topic/instance.20synthesis.20failed
+-/
+instance {α : Type u} [Finite α] [Nonempty α] : NeZero (Nat.card α) where
+  out := Nat.card_ne_zero.mpr ⟨inferInstance, inferInstance⟩
+
+-- theorem add_zmod_two (b b' : ZMod 2) : 1 + b + b' = if b = b' then 1 else 0 := by
+--   by_cases h : b = b'
+--   · rw [if_pos h, h]
+--     exact CharTwo.add_cancel_right 1 b'
+--   rw [if_neg h]
+--   sorry
+
 section Bijection
 
 universe u v
@@ -106,36 +120,45 @@ end ENNReal
 
 section Group
 
-instance {α : Type u} [Finite α] [Nonempty α] : NeZero (Nat.card α) where
-  out := Nat.card_ne_zero.mpr ⟨inferInstance, inferInstance⟩
+instance {G : Type*} [Group G] [IsCyclic G] : CommGroup G := IsCyclic.commGroup
 
-instance {G : Type} [CommGroup G] (g : G)
-    (g_gen : ∀ (x : G), x ∈ Subgroup.zpowers g) : IsCyclic G where
-  exists_zpow_surjective := ⟨g, g_gen⟩
+namespace Group
 
-theorem g_order {G : Type} [Group G]
-    (g : G) (g_gen : ∀ (x : G), x ∈ Subgroup.zpowers g) :
+def IsGenerator (G : Type*) [Group G] (g : G) :=
+  ∀ x : G, x ∈ Subgroup.zpowers g
+
+open Classical in
+noncomputable def generators (G : Type*) [Group G] [Fintype G] : Finset G :=
+  { g : G | IsGenerator G g }
+
+open Classical in
+theorem generators_nonempty_of_cyclic (G : Type*) [Group G] [IsCyclic G] [Fintype G] :
+    (generators G).Nonempty := by
+  simp only [Finset.Nonempty, generators, IsGenerator, Finset.mem_filter, Finset.mem_univ, true_and]
+  exact IsCyclic.exists_zpow_surjective
+
+theorem g_order {G : Type*} [Group G] (g : G) (hg : IsGenerator G g) :
     orderOf g = Nat.card G :=
-  orderOf_eq_card_of_forall_mem_zpowers g_gen
+  orderOf_eq_card_of_forall_mem_zpowers hg
 
-theorem zpow_val_add {G : Type} [Group G] [Fintype G]
-    (g : G) (g_gen : ∀ (x : G), x ∈ Subgroup.zpowers g)
+theorem zpow_val_add {G : Type*} [Group G] [Fintype G]
+    (g : G) (hg : IsGenerator G g)
     (a b : ZMod (Nat.card G)) :
     g ^ (a + b).val = g ^ (a.val + b.val) := by
   apply pow_eq_pow_iff_modEq.mpr
-  rw [g_order g g_gen]
+  rw [g_order g hg]
   unfold Nat.ModEq
   have : (a + b).val % (Nat.card G) = (a + b).val :=
     Nat.mod_eq_of_lt (ZMod.val_lt (a + b))
   rw [this]
   exact ZMod.val_add a b
 
-theorem zpow_val_mul {G : Type} [Group G] [Fintype G]
-    (g : G) (g_gen : ∀ (x : G), x ∈ Subgroup.zpowers g)
+theorem zpow_val_mul {G : Type*} [Group G] [Fintype G]
+    (g : G) (hg : IsGenerator G g)
     (a b : ZMod (Nat.card G)) :
     g ^ (a * b).val = g ^ (a.val * b.val) := by
   apply pow_eq_pow_iff_modEq.mpr
-  rw [g_order g g_gen]
+  rw [g_order g hg]
   unfold Nat.ModEq
   have : (a * b).val % (Nat.card G) = (a * b).val :=
     Nat.mod_eq_of_lt (ZMod.val_lt (a * b))
@@ -145,22 +168,24 @@ theorem zpow_val_mul {G : Type} [Group G] [Fintype G]
 /--
 Exponentiation in a cyclic group is bijective
 -/
-theorem group_exp_bijective {G : Type} [Group G] [Fintype G]
-    (g : G) (g_gen : ∀ (x : G), x ∈ Subgroup.zpowers g) :
+theorem exp_bijective {G : Type*} [Group G] [Fintype G]
+    (g : G) (hg : IsGenerator G g) :
     Function.Bijective fun (x : ZMod (Nat.card G))↦ g ^ x.val := by
   constructor
   · simp [Function.Injective]
     intro a₁ a₂ h
     rw [← ZMod.natCast_zmod_val a₁, ← ZMod.natCast_zmod_val a₂, ZMod.natCast_eq_natCast_iff]
     have : a₁.val ≡ a₂.val [MOD orderOf g] := pow_eq_pow_iff_modEq.mp h
-    rw [g_order g g_gen] at this
+    rw [g_order g hg] at this
     exact this
   simp [Function.Surjective]
   intro b
-  rcases g_gen b with ⟨z, rfl⟩
+  rcases hg b with ⟨z, rfl⟩
   dsimp
   use (z : ZMod (Nat.card G))
   rw [← zpow_natCast g (z : ZMod (Nat.card G)).val, ZMod.val_intCast z]
-  rw [← zpow_mod_orderOf g z, g_order g g_gen]
+  rw [← zpow_mod_orderOf g z, g_order g hg]
+
+end Group
 
 end Group
