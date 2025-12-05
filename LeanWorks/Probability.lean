@@ -36,6 +36,7 @@ lemma bind_skip (p : PMF α) (f g : α → PMF β) :
 lemma bind_skip' (p : PMF α) (f g : α → PMF β) :
     (∀ a : α, f a = g a) → (p >>= f) = (p >>= g) := bind_skip p f g
 
+@[simp]
 lemma bind_skip_const (pa : PMF α) (pb : PMF β) (f : α → PMF β) :
     (∀ a : α, f a = pb) → pa.bind f = pb := by
   intro h
@@ -45,10 +46,25 @@ lemma bind_skip_const (pa : PMF α) (pb : PMF β) (f : α → PMF β) :
   rw [PMF.tsum_coe pa]
   simp only [one_mul]
 
+@[simp]
 lemma bind_skip_const' (pa : PMF α) (pb : PMF β) (f : α → PMF β) :
     (∀ a : α, f a = pb) → (pa >>= f) = pb := bind_skip_const pa pb f
 
 end PMFBind
+
+noncomputable section Uniform
+
+def uniform_zmod (n : ℕ) [NeZero n] : PMF (ZMod n) :=
+  PMF.uniformOfFintype (ZMod n)
+
+@[simp]
+lemma uniform_zmod_prob {n : ℕ} [NeZero n] (a : ZMod n) :
+    (uniform_zmod n) a = 1 / (n : ENNReal) := by
+  simp [uniform_zmod]
+
+def uniform_2 : PMF (ZMod 2) := uniform_zmod 2
+
+end Uniform
 
 noncomputable section UniformProd
 
@@ -87,7 +103,6 @@ universe u v
 
 variable {α : Type u} [Fintype α] [Nonempty α] [DecidableEq α]
          {β : Type v} [Fintype β] [Nonempty β] [DecidableEq β]
-
 
 /--
 If `f : α → β` is bijective, then drawing `a` uniformly from `α`
