@@ -9,18 +9,25 @@ import Mathlib.Tactic
 /-!
 # Negligible functions
 
-Some results about negligible functions (https://en.wikipedia.org/wiki/Negligible_function)
-Inspired from https://github.com/JoeyLupo/cryptolib/blob/main/src/negligible.lean
+Some results about negligible functions (https://en.wikipedia.org/wiki/Negligible_function).
+Inspired from https://github.com/JoeyLupo/cryptolib/blob/main/src/negligible.lean.
+
+It contains the formalization of a theorem
+by Bellare about two definitions of "negligible"
+for families of functions (see https://eprint.iacr.org/1997/004.pdf).
+Theorem 3.2 in the paper corresponds to `fun_fam_negligible_iff`.
 -/
 
 /--
 A function is negligible if it approaches zero
-faster than the inverse of any polynomial
+faster than the inverse of any polynomial.
 -/
 def negligible (f : ℕ → ℝ) :=
   ∀ c : ℕ, ∃ n₀, ∀ n, n₀ ≤ n → |f n| ≤ 1 / (n ^ c)
 
--- The zero function is negligible
+/--
+The zero function is negligible.
+-/
 lemma zero_negl : negligible (fun _ => 0) := by
   unfold negligible
   intro c
@@ -28,7 +35,7 @@ lemma zero_negl : negligible (fun _ => 0) := by
   intro n
   norm_num
 
--- An auxiliary lemma
+-- An auxiliary lemma.
 lemma negl_add_aux {f : ℕ → ℝ} (hf : negligible f) :
     ∀ c : ℕ, ∃ n₀, ∀ n, n₀ ≤ n → |f n| ≤ (1 / (n ^ c)) / 2 := by
   intro c
@@ -55,7 +62,9 @@ lemma negl_add_aux {f : ℕ → ℝ} (hf : negligible f) :
   rw [this]
   exact (mul_le_mul_iff_right₀ npowpos).mpr twolen
 
--- The sum of two negligible functions is negligible
+/--
+The sum of two negligible functions is negligible.
+-/
 lemma negl_add {f g : ℕ → ℝ} :
     negligible f → negligible g → negligible (f + g) := by
   intro hf hg
@@ -76,8 +85,10 @@ lemma negl_add {f g : ℕ → ℝ} :
       exact le_of_max_le_right hn
     _ ≤ 1 / n ^ c := by linarith
 
--- If a function f is asymptotically upper bounded by
--- a negligible function g then it is negligible
+/--
+If a function `f` is asymptotically upper bounded by
+a negligible function `g`, then it is negligible.
+-/
 lemma negl_of_bounded_negl {f g : ℕ → ℝ} (hg : negligible g) :
     (∃ n₀, ∀ n, n₀ ≤ n → |f n| ≤ |g n|) → negligible f := by
   rintro ⟨n₀, hn₀⟩
@@ -88,7 +99,9 @@ lemma negl_of_bounded_negl {f g : ℕ → ℝ} (hg : negligible g) :
   intro n hn
   exact le_trans (hn₀ n (le_of_max_le_left hn)) (hn₁ n (le_of_max_le_right hn))
 
--- Multiplying a negligible function by a monomial yields a negligible function
+/--
+The product of a negligible function and a monomial is negligible.
+-/
 lemma pow_mul_negl {f : ℕ → ℝ} {k : ℕ} (hf : negligible f) :
     negligible fun n ↦ n ^ k * (f n) := by
   induction k with
@@ -135,7 +148,7 @@ lemma pow_mul_negl {f : ℕ → ℝ} {k : ℕ} (hf : negligible f) :
         apply pow_pos
         exact Nat.cast_pos'.mpr npos
 
--- A useful lemma for proving `pow_le_exp`
+-- A useful lemma for proving `pow_le_exp`.
 lemma sq_le_two_pow : ∀ n ≥ 4, n ^ 2 ≤ 2 ^ n := by
   apply Nat.le_induction
   · norm_num
@@ -152,7 +165,7 @@ lemma sq_le_two_pow : ∀ n ≥ 4, n ^ 2 ≤ 2 ^ n := by
     _ = 2 ^ (n + 1) := Eq.symm Nat.pow_succ'
 
 /--
-Proof that exponential grows faster than polynomial.
+Exponential grows faster than polynomial.
 Inspired from https://eventuallyalmosteverywhere.wordpress.com/2013/04/05/exponentials-kill-polynomials/
 -/
 lemma pow_le_exp (c : ℕ) :
@@ -250,28 +263,30 @@ lemma inv_exp_negl : negligible fun n ↦ (1 : ℝ) / 2 ^ n := by
   norm_cast
   exact hn₀ n (le_of_max_le_left hn)
 
-/-
-A formalization of a theorem by Bellare about defining
-"negligible" for families of functions.
-See https://eprint.iacr.org/1997/004.pdf
-Theorem 3.2 in the paper corresponds to `fun_fam_negligible_iff`
--/
+section Bellare
 
 variable (I : Type*)
 
--- A family of functions indexed by `I`
+-- A family of functions indexed by `I`.
 def fun_fam := I → ℕ → ℝ
 
--- `F` is pointwise negligible if `F i` is negligible for every `i : I`
+/--
+`F` is pointwise negligible if `F i` is negligible for every `i : I`.
+-/
 def pw_negligible (F : fun_fam I) :=
   ∀ i, negligible (F i)
 
--- `F` is uniformly negligible is there exists a negligible function `δ`
--- such that for all `i`, `F i` is eventually less than `δ`
+/--
+`F` is uniformly negligible is there exists
+a negligible function `δ` such that for all `i`,
+`F i` is eventually less than `δ`.
+-/
 def unif_negligible (F : fun_fam I) :=
   ∃ δ : ℕ → ℝ, negligible δ ∧ ∀ i, ∃ n₀, ∀ n, n₀ ≤ n → |F i n| ≤ |δ n|
 
--- Uniform negligibility implies pointwise negligibility
+/--
+Uniform negligibility implies pointwise negligibility.
+-/
 theorem pw_negl_of_unif_negl (F : fun_fam I) :
     unif_negligible I F → pw_negligible I F := by
   rintro ⟨f, ⟨hf, h⟩⟩
@@ -281,8 +296,9 @@ theorem pw_negl_of_unif_negl (F : fun_fam I) :
 
 variable [Countable I] [Nonempty I]
 
--- The converse and more complicated direction:
--- pointwise negligibility implies uniform negligibility
+/--
+Pointwise negligibility implies uniform negligibility.
+-/
 theorem unif_negl_of_pw_negl (F : fun_fam I) :
     pw_negligible I F → unif_negligible I F := by
   classical
@@ -503,8 +519,13 @@ theorem unif_negl_of_pw_negl (F : fun_fam I) :
   -- finally, we have all we need to conclude
   exact ⟨δ, claim₇, claim₆⟩
 
+/--
+Pointwise negligibility and uniform negligibility are equivalent.
+-/
 theorem fun_fam_negligible_iff (F : fun_fam I) :
     pw_negligible I F ↔ unif_negligible I F := by
   constructor
   · exact unif_negl_of_pw_negl I F
   · exact pw_negl_of_unif_negl I F
+
+end Bellare
