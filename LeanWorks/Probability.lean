@@ -107,8 +107,8 @@ variable {α : Type u} [Fintype α] [Nonempty α] [DecidableEq α]
 /--
 If `f : α → β` is bijective, then drawing `a` uniformly from `α`
 and applying `f` yields the uniform distribution on `β`.
-Using the monadic stucture of PMFs, the process of sampling `a` from
-`α` and applyng `f` is expressed as `PMF.map f (PMF.uniformOfFintype α)`.
+Using the monadic structure of PMFs, the process of sampling `a` from
+`α` and applying `f` is expressed as `PMF.map f (PMF.uniformOfFintype α)`.
 By definition, this is `(PMF.uniformOfFintype α).bind (PMF.pure ∘ f)`
 or, using `>>=` notation, `(PMF.uniformOfFintype α) >>= (PMF.pure ∘ f)`.
 One can also define it with the `do` notation:
