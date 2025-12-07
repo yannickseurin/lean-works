@@ -7,10 +7,11 @@ Experimenting with Lean 4 for proving stuff related to cryptography.
 
 ## Overview
 
+- *ToMathlib.lean*: general lemmas that don't fit anywhere else and could potentially be pushed to Mathlib.
 - *Negligible.lean*: Some results about negligible functions. It includes the proof of a theorem by Bellare about the equivalence of two definitions of negligibility for a family of functions (namely, Theorem 3.2 from https://eprint.iacr.org/1997/004.pdf).
 - *Probability.lean*: General results about probabilities. For example, we prove that if `f : α → β` is bijective, then drawing `a` uniformly from `α`
 and applying `f` yields the uniform distribution on `β`. 
-- *ToMathlib.lean*: general lemmas that don't fit anywhere else and could potentially be pushed to Mathlib
+- *Pke.lean*: Definitions about public-key encryption schemes (syntax, correctness, IND-CPA security).
 
 ## Prerequisites
 
