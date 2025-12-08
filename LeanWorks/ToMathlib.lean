@@ -93,11 +93,13 @@ end Bijection
 
 section ENNReal
 
-theorem ENNReal.mul_natCast {a b : ℕ} : (a : ENNReal) * (b : ENNReal) = (↑(a * b) : ENNReal) := by
+open ENNReal
+
+theorem ENNReal.mul_natCast {a b : ℕ} : (a : ℝ≥0∞) * (b : ℝ≥0∞) = (↑(a * b) : ℝ≥0∞) := by
   exact Eq.symm (Nat.cast_mul a b)
 
 theorem ENNReal.mul_inv_natCast {a b : ℕ} :
-    ((a : ENNReal) * (b : ENNReal))⁻¹ = (a : ENNReal)⁻¹ * (b : ENNReal)⁻¹ := by
+    ((a : ℝ≥0∞) * (b : ℝ≥0∞))⁻¹ = (a : ℝ≥0∞)⁻¹ * (b : ℝ≥0∞)⁻¹ := by
   apply ENNReal.mul_inv
   · right
     exact ENNReal.natCast_ne_top b
@@ -105,13 +107,13 @@ theorem ENNReal.mul_inv_natCast {a b : ℕ} :
   exact ENNReal.natCast_ne_top a
 
 theorem ENNReal.inv_mul_cancel_natCast {a : ℕ} (ha : a ≠ 0) :
-     (a : ENNReal)⁻¹ * (a : ENNReal) = 1 := by
+     (a : ℝ≥0∞)⁻¹ * (a : ℝ≥0∞) = 1 := by
   apply ENNReal.inv_mul_cancel
   · exact Nat.cast_ne_zero.mpr ha
   exact natCast_ne_top a
 
 theorem ENNReal.mul_inv_cancel_natCast {a : ℕ} (ha : a ≠ 0) :
-     (a : ENNReal) * (a : ENNReal)⁻¹  = 1 := by
+     (a : ℝ≥0∞) * (a : ℝ≥0∞)⁻¹  = 1 := by
   apply ENNReal.mul_inv_cancel
   · exact Nat.cast_ne_zero.mpr ha
   exact natCast_ne_top a
