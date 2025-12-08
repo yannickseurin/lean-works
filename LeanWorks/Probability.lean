@@ -6,6 +6,8 @@ Authors: Yannick Seurin
 import Mathlib.Probability.Distributions.Uniform
 import LeanWorks.ToMathlib
 
+open ENNReal
+
 namespace PMF
 
 section PMFBind
@@ -43,7 +45,7 @@ lemma bind_skip_const (pa : PMF α) (pb : PMF β) (f : α → PMF β) :
   ext x
   simp [h]
   rw [ENNReal.tsum_mul_right]
-  rw [PMF.tsum_coe pa]
+  rw [tsum_coe pa]
   simp only [one_mul]
 
 @[simp]
@@ -55,14 +57,26 @@ end PMFBind
 noncomputable section Uniform
 
 def uniform_zmod (n : ℕ) [NeZero n] : PMF (ZMod n) :=
-  PMF.uniformOfFintype (ZMod n)
+  uniformOfFintype (ZMod n)
 
 @[simp]
 lemma uniform_zmod_prob {n : ℕ} [NeZero n] (a : ZMod n) :
-    (uniform_zmod n) a = 1 / (n : ENNReal) := by
+    (uniform_zmod n) a = (n : ℝ≥0∞)⁻¹ := by
   simp [uniform_zmod]
 
-def uniform_2 : PMF (ZMod 2) := uniform_zmod 2
+@[simp]
+lemma uniform_zmod_prob' {n : ℕ} [NeZero n] (a : ZMod n) :
+    (uniformOfFintype (ZMod n)) a = (n : ℝ≥0∞)⁻¹ := by
+  simp
+
+@[simp]
+lemma uniform_threewise_prob {G : Type*} [Fintype G] [Nonempty G] (a : G × G × G) :
+    (uniformOfFintype (G × G × G)) a =
+      (Nat.card G : ℝ≥0∞)⁻¹ * (Nat.card G : ℝ≥0∞)⁻¹ * (Nat.card G : ℝ≥0∞)⁻¹ := by
+  simp only [uniformOfFintype_apply, Fintype.card_prod, Nat.cast_mul, Nat.card_eq_fintype_card]
+  rw [← Nat.cast_mul, ENNReal.mul_inv_natCast, Nat.cast_mul, ENNReal.mul_inv_natCast, ← mul_assoc]
+
+def uniform_coin : PMF (Bool) := uniformOfFintype Bool
 
 end Uniform
 
@@ -80,20 +94,16 @@ The process can also be written
 `PMF.uniformOfFintype α >>= fun x ↦ PMF.uniformOfFintype β >>= fun y ↦ PMF.pure (x, y)`
 -/
 lemma uniform_prod :
-    (
-    do
-      let a ← PMF.uniformOfFintype α
-      let b ← PMF.uniformOfFintype β
-      pure (a, b)
-    ) = PMF.uniformOfFintype (α × β) := by
+    (do
+       let a ← uniformOfFintype α
+       let b ← uniformOfFintype β
+       pure (a, b)) = uniformOfFintype (α × β) := by
   ext p
   let (a, b) := p
-  simp_rw
-    [PMF.bind_apply', PMF.uniformOfFintype_apply, PMF.pure_apply, mul_ite,
-    mul_one, mul_zero, Fintype.card_prod, Nat.cast_mul]
-  rw [ENNReal.tsum_mul_left, ← ENNReal.tsum_prod]
-  rw [ENNReal.mul_inv_natCast]
-  simp [eq_comm]
+  simp only [bind_apply', uniformOfFintype_apply, pure_apply,
+    mul_ite, mul_one, mul_zero, Fintype.card_prod, Nat.cast_mul,
+    ENNReal.tsum_mul_left, ← ENNReal.tsum_prod, ENNReal.mul_inv_natCast,
+    eq_comm, Prod.mk.eta, tsum_ite_eq]
 
 end UniformProd
 
@@ -119,7 +129,7 @@ def foo : PMF β := do
 ```
 -/
 lemma map_eq_uniform_of_bijective (f : α → β) (hf : Function.Bijective f) :
-    PMF.map f (PMF.uniformOfFintype α) = PMF.uniformOfFintype β := by
+    map f (uniformOfFintype α) = uniformOfFintype β := by
   ext b
   simp only [map_apply, uniformOfFintype_apply]
   rw [Fintype.card_of_bijective hf]
@@ -128,5 +138,20 @@ lemma map_eq_uniform_of_bijective (f : α → β) (hf : Function.Bijective f) :
   simp [tsum_ite_eq]
 
 end UniformBij
+
+section UniformGroup
+
+/--
+Applying exponentiation to `x` drawn uniformly at raandom from `ZMod #G`
+yields the uniform distribution on `G`.
+-/
+theorem exp_eq_uniform_group {G : Type*} [Group G] [Fintype G] [DecidableEq G]
+    (g : G) (hg : Group.IsGenerator G g) :
+    PMF.map (fun x ↦ g ^ x.val) (uniform_zmod (Nat.card G)) = PMF.uniformOfFintype G := by
+  rw [uniform_zmod]
+  apply map_eq_uniform_of_bijective
+  exact Group.exp_bijective g hg
+
+end UniformGroup
 
 end PMF
