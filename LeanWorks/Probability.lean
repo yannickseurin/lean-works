@@ -10,21 +10,67 @@ open ENNReal
 
 namespace PMF
 
-section PMFBind
+section PMFLemmasVariants
+
+universe u
+
+variable {α β γ : Type u}
+
+-- variant of `PMF.pure_bind`
+@[simp]
+theorem pure_bind' (a : α) (f : α → PMF β) :
+    ((pure a) >>= f) = f a := pure_bind a f
+
+-- variant of `PMF.pure_bind`
+@[simp]
+theorem pure_bind'' (a : α) (f : α → PMF β) :
+    (do
+      let a' ← pure a
+      f a') = f a := pure_bind a f
+
+-- variant of `PMF.bind_apply`
+@[simp]
+theorem bind_apply' (p : PMF α) (f : α → PMF β) (b : β) :
+    (p >>= f) b = ∑' (a : α), p a * (f a) b := bind_apply p f b
+
+-- variant of `PMF.bind_bind`
+@[simp]
+theorem bind_bind' (p : PMF α) (f : α → PMF β) (g : β → PMF γ) :
+    (p >>= f) >>= g = p >>= (fun (a : α) ↦ (f a) >>= g) := bind_bind p f g
+
+-- variant of `PMF.bind_bind`
+@[simp]
+theorem bind_bind'' (p : PMF α) (f : α → PMF β) (g : β → PMF γ) :
+    (do
+      let b ← (do
+        let a ← p
+        f a)
+      g b) =
+    (do
+      let a ← p
+      let b ← f a
+      g b) := bind_bind p f g
+
+theorem bind_comm' (p : PMF α) (q : PMF β) (f : α → β → PMF γ) :
+    (p >>= fun a ↦ q >>= f a) = q >>= fun b ↦ p >>= fun a ↦ f a b := bind_comm p q f
+
+theorem bind_comm'' (p : PMF α) (q : PMF β) (f : α → β → PMF γ) :
+    (do
+      let a ← p
+      let b ← q
+      f a b) =
+    (do
+      let b ← q
+      let a ← p
+      f a b) := bind_comm p q f
+
+end PMFLemmasVariants
+
+section NewPMFLemmas
 
 universe u
 
 variable {α β : Type u}
-         (p : PMF α) (f : α → PMF β)
-
--- variant of `PMF.pure_bind`
-@[simp]
-theorem pure_bind' (a : α) : ((pure a) >>= f) = f a := pure_bind a f
-
--- variant of `PMF.bind_apply`
-@[simp]
-theorem bind_apply' (b : β) :
-    (p >>= f) b = ∑' (a : α), p a * (f a) b := bind_apply p f b
 
 lemma bind_skip (p : PMF α) (f g : α → PMF β) :
     (∀ a : α, f a = g a) → p.bind f = p.bind g := by
@@ -37,6 +83,15 @@ lemma bind_skip (p : PMF α) (f g : α → PMF β) :
 
 lemma bind_skip' (p : PMF α) (f g : α → PMF β) :
     (∀ a : α, f a = g a) → (p >>= f) = (p >>= g) := bind_skip p f g
+
+lemma bind_skip'' (p : PMF α) (f g : α → PMF β) :
+    (∀ a : α, f a = g a) →
+      (do
+        let a ← p
+        f a) =
+      (do
+        let a ← p
+        g a) := bind_skip p f g
 
 @[simp]
 lemma bind_skip_const (pa : PMF α) (pb : PMF β) (f : α → PMF β) :
@@ -52,7 +107,14 @@ lemma bind_skip_const (pa : PMF α) (pb : PMF β) (f : α → PMF β) :
 lemma bind_skip_const' (pa : PMF α) (pb : PMF β) (f : α → PMF β) :
     (∀ a : α, f a = pb) → (pa >>= f) = pb := bind_skip_const pa pb f
 
-end PMFBind
+@[simp]
+lemma bind_skip_const'' (pa : PMF α) (pb : PMF β) (f : α → PMF β) :
+    (∀ a : α, f a = pb) →
+      (do
+        let a ← pa
+        f a) = pb := bind_skip_const pa pb f
+
+end NewPMFLemmas
 
 noncomputable section Uniform
 
@@ -77,6 +139,11 @@ lemma uniform_threewise_prob {G : Type*} [Fintype G] [Nonempty G] (a : G × G ×
   rw [← Nat.cast_mul, ENNReal.mul_inv_natCast, Nat.cast_mul, ENNReal.mul_inv_natCast, ← mul_assoc]
 
 def uniform_coin : PMF (Bool) := uniformOfFintype Bool
+
+/-- The uniform probability over the subtype of generators of a group `G`. -/
+noncomputable def uniformGenerator (G : Type) [Group G] [Fintype G] [IsCyclic G] :
+    PMF (Group.Generator G) :=
+  uniformOfFintype (Group.Generator G)
 
 end Uniform
 
@@ -142,15 +209,48 @@ end UniformBij
 section UniformGroup
 
 /--
-Applying exponentiation to `x` drawn uniformly at raandom from `ZMod #G`
+Applying exponentiation to `x` drawn uniformly at random from `ZMod #G`
 yields the uniform distribution on `G`.
 -/
 theorem exp_eq_uniform_group {G : Type*} [Group G] [Fintype G] [DecidableEq G]
     (g : G) (hg : Group.IsGenerator G g) :
-    PMF.map (fun x ↦ g ^ x.val) (uniform_zmod (Nat.card G)) = PMF.uniformOfFintype G := by
+    PMF.map (fun x ↦ g ^ x.val) (uniform_zmod (Nat.card G)) = uniformOfFintype G := by
   rw [uniform_zmod]
   apply map_eq_uniform_of_bijective
   exact Group.exp_bijective g hg
+
+/--
+Applying exponentiation to `x` drawn uniformly at random from `ZMod #G`
+yields the uniform distribution on `G`.
+-/
+theorem exp_eq_uniform_group' {G : Type} [Group G] [Fintype G] [DecidableEq G]
+    (g : G) (hg : Group.IsGenerator G g) :
+    (do
+      let x ← uniform_zmod (Nat.card G)
+      PMF.pure (g ^ x.val)
+    ) = uniformOfFintype G := exp_eq_uniform_group g hg
+
+/--
+Applying exponentiation to `x` drawn uniformly at random from `ZMod #G`
+and multiplying by a fixed group element yields the uniform distribution on `G`.
+-/
+theorem exp_mul_eq_uniform_group {G : Type*} [Group G] [Fintype G] [DecidableEq G]
+    (g m : G) (hg : Group.IsGenerator G g) :
+    PMF.map (fun x ↦ g ^ x.val * m) (uniform_zmod (Nat.card G)) = uniformOfFintype G := by
+  rw [uniform_zmod]
+  apply map_eq_uniform_of_bijective
+  exact Group.exp_mul_bijective g m hg
+
+/--
+Applying exponentiation to `x` drawn uniformly at random from `ZMod #G`
+yields the uniform distribution on `G`.
+-/
+theorem exp_mul_eq_uniform_group' {G : Type} [Group G] [Fintype G] [DecidableEq G]
+    (g m : G) (hg : Group.IsGenerator G g) :
+    (do
+      let x ← uniform_zmod (Nat.card G)
+      PMF.pure (g ^ x.val * m)
+    ) = uniformOfFintype G := exp_mul_eq_uniform_group g m hg
 
 end UniformGroup
 
