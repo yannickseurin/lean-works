@@ -16,13 +16,6 @@ See https://leanprover.zulipchat.com/#narrow/channel/113489-new-members/topic/in
 instance {α : Type u} [Finite α] [Nonempty α] : NeZero (Nat.card α) where
   out := Nat.card_ne_zero.mpr ⟨inferInstance, inferInstance⟩
 
--- theorem add_zmod_two (b b' : ZMod 2) : 1 + b + b' = if b = b' then 1 else 0 := by
---   by_cases h : b = b'
---   · rw [if_pos h, h]
---     exact CharTwo.add_cancel_right 1 b'
---   rw [if_neg h]
---   sorry
-
 section Bijection
 
 universe u v
@@ -129,14 +122,23 @@ namespace Group
 def IsGenerator (G : Type*) [Group G] (g : G) :=
   ∀ x : G, x ∈ Subgroup.zpowers g
 
-open Classical in
-noncomputable def generators (G : Type*) [Group G] [Fintype G] : Finset G :=
-  { g : G | IsGenerator G g }
+/-- The subtype of generators of a group `G`.
+We make it a subtype because, when drawing a random generator
+`g` of `G`, we want to have access to a proof that it is a
+generator (something we would not have with a Finset).
+Note: if `g : generator G`, then `g` is actually a pair
+`(g.val, g.property)` where `g.val : G` and `g.property` is a
+proof that `g.val` is a generator of `G`. -/
+def Generator (G : Type*) [Group G] :=
+  { g : G // IsGenerator G g }
 
-open Classical in
-theorem generators_nonempty_of_cyclic (G : Type*) [Group G] [IsCyclic G] [Fintype G] :
-    (generators G).Nonempty := by
-  simp only [Finset.Nonempty, generators, IsGenerator, Finset.mem_filter, Finset.mem_univ, true_and]
+noncomputable instance (G : Type*) [Group G] [IsCyclic G] [Fintype G] :
+    Fintype (Generator G) :=
+  Subtype.fintype fun x ↦ ∀ (x_1 : G), x_1 ∈ Subgroup.zpowers x
+
+instance (G : Type*) [Group G] [IsCyclic G] :
+    Nonempty (Generator G) := by
+  simp only [Generator, IsGenerator, nonempty_subtype]
   exact IsCyclic.exists_zpow_surjective
 
 theorem g_order {G : Type*} [Group G] (g : G) (hg : IsGenerator G g) :
@@ -168,11 +170,11 @@ theorem zpow_val_mul {G : Type*} [Group G] [Fintype G]
   exact ZMod.val_mul a b
 
 /--
-Exponentiation in a cyclic group is bijective
+In a cyclic group, exponentiation is bijective.
 -/
 theorem exp_bijective {G : Type*} [Group G] [Fintype G]
     (g : G) (hg : IsGenerator G g) :
-    Function.Bijective fun (x : ZMod (Nat.card G))↦ g ^ x.val := by
+    Function.Bijective fun (x : ZMod (Nat.card G)) ↦ g ^ x.val := by
   constructor
   · simp [Function.Injective]
     intro a₁ a₂ h
@@ -187,6 +189,18 @@ theorem exp_bijective {G : Type*} [Group G] [Fintype G]
   use (z : ZMod (Nat.card G))
   rw [← zpow_natCast g (z : ZMod (Nat.card G)).val, ZMod.val_intCast z]
   rw [← zpow_mod_orderOf g z, g_order g hg]
+
+/--
+In a cyclic group, exponentiation followed by multiplication by
+a fixed group element is bijective.
+-/
+theorem exp_mul_bijective {G : Type*} [Group G] [Fintype G]
+    (g m : G) (hg : IsGenerator G g) :
+    Function.Bijective fun (x : ZMod (Nat.card G)) ↦ g ^ x.val * m := by
+  change Function.Bijective ((fun (a : G) ↦ a * m) ∘ (fun (x : ZMod (Nat.card G)) ↦ g ^ x.val))
+  apply Function.Bijective.comp
+  · exact mulRight_bijective m
+  exact exp_bijective g hg
 
 end Group
 
