@@ -116,36 +116,36 @@ lemma bind_skip_const'' (pa : PMF α) (pb : PMF β) (f : α → PMF β) :
 
 end NewPMFLemmas
 
-noncomputable section Uniform
+noncomputable section UniformDistributions
 
-def uniform_zmod (n : ℕ) [NeZero n] : PMF (ZMod n) :=
+def uniformZMod (n : ℕ) [NeZero n] : PMF (ZMod n) :=
   uniformOfFintype (ZMod n)
 
 @[simp]
 lemma uniform_zmod_prob {n : ℕ} [NeZero n] (a : ZMod n) :
-    (uniform_zmod n) a = (n : ℝ≥0∞)⁻¹ := by
-  simp [uniform_zmod]
+    (uniformZMod n) a = (n : ℝ≥0∞)⁻¹ := by
+  simp [uniformZMod]
+
+-- @[simp]
+-- lemma uniform_zmod_prob' {n : ℕ} [NeZero n] (a : ZMod n) :
+--     (uniformOfFintype (ZMod n)) a = (n : ℝ≥0∞)⁻¹ := by
+--   simp
 
 @[simp]
-lemma uniform_zmod_prob' {n : ℕ} [NeZero n] (a : ZMod n) :
-    (uniformOfFintype (ZMod n)) a = (n : ℝ≥0∞)⁻¹ := by
-  simp
-
-@[simp]
-lemma uniform_threewise_prob {G : Type*} [Fintype G] [Nonempty G] (a : G × G × G) :
-    (uniformOfFintype (G × G × G)) a =
-      (Nat.card G : ℝ≥0∞)⁻¹ * (Nat.card G : ℝ≥0∞)⁻¹ * (Nat.card G : ℝ≥0∞)⁻¹ := by
+lemma uniform_threewise_prob {α : Type*} [Fintype α] [Nonempty α] (a : α × α × α) :
+    (uniformOfFintype (α × α × α)) a =
+      (Nat.card α : ℝ≥0∞)⁻¹ * (Nat.card α : ℝ≥0∞)⁻¹ * (Nat.card α : ℝ≥0∞)⁻¹ := by
   simp only [uniformOfFintype_apply, Fintype.card_prod, Nat.cast_mul, Nat.card_eq_fintype_card]
   rw [← Nat.cast_mul, ENNReal.mul_inv_natCast, Nat.cast_mul, ENNReal.mul_inv_natCast, ← mul_assoc]
 
-def uniform_coin : PMF (Bool) := uniformOfFintype Bool
+def uniformCoin : PMF (Bool) := uniformOfFintype Bool
 
 /-- The uniform probability over the subtype of generators of a group `G`. -/
 noncomputable def uniformGenerator (G : Type) [Group G] [Fintype G] [IsCyclic G] :
     PMF (Group.Generator G) :=
   uniformOfFintype (Group.Generator G)
 
-end Uniform
+end UniformDistributions
 
 noncomputable section UniformProd
 
@@ -214,8 +214,8 @@ yields the uniform distribution on `G`.
 -/
 theorem exp_eq_uniform_group {G : Type*} [Group G] [Fintype G] [DecidableEq G]
     (g : G) (hg : Group.IsGenerator G g) :
-    PMF.map (fun x ↦ g ^ x.val) (uniform_zmod (Nat.card G)) = uniformOfFintype G := by
-  rw [uniform_zmod]
+    PMF.map (fun x ↦ g ^ x.val) (uniformZMod (Nat.card G)) = uniformOfFintype G := by
+  rw [uniformZMod]
   apply map_eq_uniform_of_bijective
   exact Group.exp_bijective g hg
 
@@ -226,7 +226,7 @@ yields the uniform distribution on `G`.
 theorem exp_eq_uniform_group' {G : Type} [Group G] [Fintype G] [DecidableEq G]
     (g : G) (hg : Group.IsGenerator G g) :
     (do
-      let x ← uniform_zmod (Nat.card G)
+      let x ← uniformZMod (Nat.card G)
       PMF.pure (g ^ x.val)
     ) = uniformOfFintype G := exp_eq_uniform_group g hg
 
@@ -236,8 +236,8 @@ and multiplying by a fixed group element yields the uniform distribution on `G`.
 -/
 theorem exp_mul_eq_uniform_group {G : Type*} [Group G] [Fintype G] [DecidableEq G]
     (g m : G) (hg : Group.IsGenerator G g) :
-    PMF.map (fun x ↦ g ^ x.val * m) (uniform_zmod (Nat.card G)) = uniformOfFintype G := by
-  rw [uniform_zmod]
+    PMF.map (fun x ↦ g ^ x.val * m) (uniformZMod (Nat.card G)) = uniformOfFintype G := by
+  rw [uniformZMod]
   apply map_eq_uniform_of_bijective
   exact Group.exp_mul_bijective g m hg
 
@@ -248,7 +248,7 @@ yields the uniform distribution on `G`.
 theorem exp_mul_eq_uniform_group' {G : Type} [Group G] [Fintype G] [DecidableEq G]
     (g m : G) (hg : Group.IsGenerator G g) :
     (do
-      let x ← uniform_zmod (Nat.card G)
+      let x ← uniformZMod (Nat.card G)
       PMF.pure (g ^ x.val * m)
     ) = uniformOfFintype G := exp_mul_eq_uniform_group g m hg
 

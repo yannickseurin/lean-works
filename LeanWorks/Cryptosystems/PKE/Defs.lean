@@ -83,7 +83,7 @@ noncomputable def indCpaGame {pke : PKE} (adv : pke.indCpaAdversary) : PMF Bool 
   let par ← pke.setup
   let (_, pk) ← pke.keygen par
   let (m₀, m₁, st) ← adv.A₁ par pk
-  let b ← PMF.uniform_coin
+  let b ← PMF.uniformCoin
   let c ← pke.encrypt par pk (if b then m₁ else m₀)
   let b' ← adv.A₂ c st
   PMF.pure (if b = b' then true else false)
