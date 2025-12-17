@@ -17,16 +17,16 @@ We model randomized algorithm as PMFs over their return type.
 -/
 structure PKE where
   /-- public parameters -/
-  {P : Type}
+  {P : Type*}
   /-- secret keys -/
-  {SK : Type}
+  {SK : Type*}
   /-- public keys -/
-  {PK : Type}
+  {PK : Type*}
   /-- messages -/
-  {M : Type}
+  {M : Type*}
   [dem : DecidableEq M]
   /-- ciphertexts -/
-  {C : Type}
+  {C : Type*}
   /-- `setup` takes no input and returns
   public parameters `par` (randomized) -/
   setup : PMF P
@@ -47,50 +47,51 @@ namespace PKE
 
 /-- The correctness experiment.
 Executes the public-key scheme by encrypting and decrypting some message `m`
-and returns 1 if the ciphertexts decrypts to `m` and 0 otherwise.
+and returns `true` if the ciphertexts decrypts to `m` and `false` otherwise.
 -/
-noncomputable def correctness (pke : PKE) (m : pke.M) : PMF (ZMod 2) := do
+noncomputable def correctnessGame (pke : PKE) (m : pke.M) : PMF Bool := do
   let par ← pke.setup
   let (sk, pk) ← pke.keygen par
   let c ← pke.encrypt par pk m
-  PMF.pure (if pke.decrypt par sk c = some m then 1 else 0)
+  PMF.pure (if pke.decrypt par sk c = some m then true else false)
 
 /--
 A public-key encryption scheme is (perfectly) correct if for every
-message `m`, decryption undoes encryption with probability 1.
+message `m`, decrypting the encryption of `m` returns `m` with probability 1.
 -/
-def PerfectlyCorrect (pke : PKE) : Prop := ∀ (m : pke.M), pke.correctness m = PMF.pure 1
+def PerfectlyCorrect (pke : PKE) : Prop :=
+  ∀ (m : pke.M), pke.correctnessGame m = PMF.pure true
 
 /--
 An IND-CPA adversary against a PKE.
 -/
-structure Adversary (pke : PKE) where
+structure indCpaAdversary (pke : PKE) where
   /-- state passed from `A₁` to `A₂` -/
-  A_state : Type
+  A_state : Type*
   /-- First stage: takes public parameters `par`, a public key `pk`,
   and outputs two messages `m₀` and `m₁` and a state. -/
   A₁ : pke.P → pke.PK → PMF (pke.M × pke.M × A_state)
   /-- Second stage: takes a ciphertext `c` (of either `m₀` or `m₁`)
   and a state passed from `A₁` and returns a bit. -/
-  A₂ : pke.C → A_state → PMF (ZMod 2)
+  A₂ : pke.C → A_state → PMF Bool
 
 /--
 The IND-CPA (semantic security) game.
-Returns 1 if the attacker A₂ guesses the correct bit.
+Returns `true` if the adversary `A₂` guesses the correct bit.
 -/
-noncomputable def IND_CPA {pke : PKE} (adversary : Adversary pke) : PMF (ZMod 2) := do
+noncomputable def indCpaGame {pke : PKE} (adv : pke.indCpaAdversary) : PMF Bool := do
   let par ← pke.setup
   let (_, pk) ← pke.keygen par
-  let (m₀, m₁, state) ← adversary.A₁ par pk
-  let b ← PMF.uniform_2
-  let c ← pke.encrypt par pk (if b = 0 then m₀ else m₁)
-  let b' ← adversary.A₂ c state
-  pure (if b = b' then 1 else 0)
+  let (m₀, m₁, st) ← adv.A₁ par pk
+  let b ← PMF.uniform_coin
+  let c ← pke.encrypt par pk (if b then m₁ else m₀)
+  let b' ← adv.A₂ c st
+  PMF.pure (if b = b' then true else false)
 
 /--
 The advantage of an IND-CPA adversary against a PKE scheme.
 -/
-noncomputable def advantage {pke : PKE} (adversary : Adversary pke) : ℝ :=
-  |(IND_CPA adversary 1).toReal - 1 / 2|
+noncomputable def indCpaAdvantage {pke : PKE} (adv : pke.indCpaAdversary) : ℝ :=
+  |(indCpaGame adv true).toReal - 1 / 2|
 
 end PKE
