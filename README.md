@@ -31,6 +31,7 @@ Folder containing files defining various cryptographic primitives and schemes an
 Public key encryption schemes:
 
 - *Defs.lean*: Basic definitions about public-key encryption schemes (syntax, correctness, IND-CPA security).
+- *ElGamal.lean*: The (basic) ElGamal public-key encryption scheme. We prove correctness and IND-CPA security. Inspired from the [cryptolib](https://github.com/JoeyLupo/cryptolib) library by Joey Lupo (which was written in Lean3).
 
 ## Prerequisites
 
