@@ -303,7 +303,7 @@ theorem unif_negl_of_pw_negl (F : fun_fam I) :
     pw_negligible I F → unif_negligible I F := by
   classical
   intro hF
-  simp [pw_negligible, negligible] at hF
+  simp only [pw_negligible, negligible, one_div] at hF
   -- we follow Bellare's proof very closely
   -- We define function `N i c` such that
   -- `F i c ≤ 1 / n ^ c` for all `n ≥ N i c`
@@ -320,7 +320,7 @@ theorem unif_negl_of_pw_negl (F : fun_fam I) :
   let N' (j : ℕ) (c : ℕ) : ℕ :=
     if j ∈ Set.range s then N (Function.invFun s j) c else 0
   have hNN' (i : I) (c : ℕ) : N i c = N' (s i) c := by
-    simp [N']
+    simp only [Set.mem_range, exists_apply_eq_apply, ↓reduceIte, N']
     rw [Function.leftInverse_invFun s_inj i]
   -- define Finset `S c = { N' 0 c, N' 1 c, ..., N' c c }`
   let S (c : ℕ) : Finset ℕ := (Finset.range (c + 1)).image (fun j => N' j c)
@@ -346,7 +346,7 @@ theorem unif_negl_of_pw_negl (F : fun_fam I) :
     | succ c =>
       trans (S (c + 1)).max' (S_ne (c + 1))
       · have : N' j (c + 1) ∈ S (c + 1) := by
-          simp [S]
+          simp only [Finset.mem_image, Finset.mem_range, S]
           use j
           simp
           linarith
@@ -400,14 +400,15 @@ theorem unif_negl_of_pw_negl (F : fun_fam I) :
     exact Set.nonempty_of_mem this
   -- also, `T' n` is a subset of `T' (n + 1)`
   have T'_subset (n : ℕ) : T' n ⊆ T' (n + 1) := by
-    simp [T']
+    simp only [Finset.union_singleton, T']
     apply Finset.insert_subset_insert 0
     apply Set.Finite.toFinset_subset_toFinset.mpr
     simp [T]
     tauto
   have T'_le (c : ℕ) : ∀ a ∈ T' (φ c), a ≤ c := by
     intro a a_mem
-    simp [T, T'] at a_mem
+    simp only [Finset.union_singleton, Finset.mem_insert, Set.Finite.mem_toFinset,
+      Set.mem_setOf_eq, T, T'] at a_mem
     rcases a_mem with h | h
     · linarith
     contrapose! h
@@ -429,13 +430,14 @@ theorem unif_negl_of_pw_negl (F : fun_fam I) :
     intro hn
     have : γ n ∈ T' n := by
       exact Finset.max'_mem (T' n) (T'_ne n)
-    simp [T, T'] at this
+    simp only [Finset.union_singleton, Finset.mem_insert, Set.Finite.mem_toFinset,
+      Set.mem_setOf_eq, T, T'] at this
     rcases this with h | h
     · rw [h]
       simpa [φ]
     assumption
   have claim₅ (c : ℕ) : γ (φ c) = c := by
-    simp [γ]
+    simp only [γ]
     apply Nat.le_antisymm
     · exact Finset.max'_le (T' (φ c)) (T'_ne (φ c)) c (T'_le c)
     have : c ∈ T' (φ c) := by
@@ -452,20 +454,21 @@ theorem unif_negl_of_pw_negl (F : fun_fam I) :
   -- finally, we can define `δ`
   let δ (n : ℕ) : ℝ := (U n).max' (U_ne n)
   have δ_nonneg (n : ℕ) : 0 ≤ δ n := by
-    simp [δ]
+    simp only [δ]
     have : 0 ∈ U n := by simp [U]
     exact Finset.le_max' (U n) 0 this
   have hδ (i : I)  (n: ℕ) : s i ≤ γ n → |F i n| ≤ δ n := by
     intro hsi
     have : |F i n| ∈ U n := by
-      simp [U]
+      simp only [Set.mem_range, Finset.singleton_union, Finset.mem_insert, abs_eq_zero,
+        Finset.mem_image, Finset.mem_range, U]
       right
       use s i
       constructor
       · linarith
-      simp
+      simp only [exists_apply_eq_apply, ↓reduceIte]
       rw [Function.leftInverse_invFun s_inj i]
-    simp [δ]
+    simp only [ge_iff_le, δ]
     exact Finset.le_max' (U n) |F i n| this
   -- every function `F i` is eventually less than `δ`
   have claim₆ : ∀ i, ∃ n₀, ∀ n, n₀ ≤ n → |F i n| ≤ |δ n| := by
@@ -485,12 +488,13 @@ theorem unif_negl_of_pw_negl (F : fun_fam I) :
     intro n hn
     have ncast_ge_one : 1 ≤ (n : ℝ) := Nat.one_le_cast.mpr (le_of_max_le_right hn)
     rw [abs_of_nonneg (δ_nonneg n)]
-    simp
+    simp only [one_div, ge_iff_le]
     trans ((n : ℝ) ^ (γ n))⁻¹
-    · simp [δ]
+    · simp only [Finset.max'_le_iff, δ]
       have n_ge : φ (γ n) ≤ n := claim₄ n (le_of_max_le_right (le_of_max_le_left hn))
       intro x hx
-      simp [U] at hx
+      simp only [Set.mem_range, Finset.singleton_union, Finset.mem_insert, Finset.mem_image,
+        Finset.mem_range, U] at hx
       rcases hx with h | h
       · rw [h]
         positivity
