@@ -76,7 +76,7 @@ theorem Function.bijective_nfold (n : ℕ) (hf : Function.Bijective f) :
         intro b bs
         specialize ih bs
         have hb : ∃! a, f a = b := by exact Function.Bijective.existsUnique hf b
-        simp [ExistsUnique] at *
+        simp only [ExistsUnique, and_imp, Prod.forall, Prod.exists, Prod.mk.injEq]
         rcases hb with ⟨a, ha, ha'⟩
         rcases ih with ⟨as, has, has'⟩
         use a, as
@@ -176,13 +176,13 @@ theorem exp_bijective {G : Type*} [Group G] [Fintype G]
     (g : G) (hg : IsGenerator G g) :
     Function.Bijective fun (x : ZMod (Nat.card G)) ↦ g ^ x.val := by
   constructor
-  · simp [Function.Injective]
+  · simp only [Function.Injective]
     intro a₁ a₂ h
     rw [← ZMod.natCast_zmod_val a₁, ← ZMod.natCast_zmod_val a₂, ZMod.natCast_eq_natCast_iff]
     have : a₁.val ≡ a₂.val [MOD orderOf g] := pow_eq_pow_iff_modEq.mp h
     rw [g_order g hg] at this
     exact this
-  simp [Function.Surjective]
+  simp only [Function.Surjective]
   intro b
   rcases hg b with ⟨z, rfl⟩
   dsimp
