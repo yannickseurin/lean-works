@@ -126,11 +126,6 @@ lemma uniform_zmod_prob {n : ℕ} [NeZero n] (a : ZMod n) :
     (uniformZMod n) a = (n : ℝ≥0∞)⁻¹ := by
   simp [uniformZMod]
 
--- @[simp]
--- lemma uniform_zmod_prob' {n : ℕ} [NeZero n] (a : ZMod n) :
---     (uniformOfFintype (ZMod n)) a = (n : ℝ≥0∞)⁻¹ := by
---   simp
-
 @[simp]
 lemma uniform_threewise_prob {α : Type*} [Fintype α] [Nonempty α] (a : α × α × α) :
     (uniformOfFintype (α × α × α)) a =
@@ -179,7 +174,7 @@ noncomputable section UniformBij
 universe u v
 
 variable {α : Type u} [Fintype α] [Nonempty α] [DecidableEq α]
-         {β : Type v} [Fintype β] [Nonempty β] [DecidableEq β]
+         {β : Type v} [Fintype β] [Nonempty β]
 
 /--
 If `f : α → β` is bijective, then drawing `a` uniformly from `α`
