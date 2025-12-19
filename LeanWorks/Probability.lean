@@ -76,7 +76,7 @@ lemma bind_skip (p : PMF α) (f g : α → PMF β) :
     (∀ a : α, f a = g a) → p.bind f = p.bind g := by
   intro h
   ext x
-  simp
+  simp only [bind_apply]
   apply tsum_congr
   intro b
   rw [h b]
@@ -98,7 +98,7 @@ lemma bind_skip_const (pa : PMF α) (pb : PMF β) (f : α → PMF β) :
     (∀ a : α, f a = pb) → pa.bind f = pb := by
   intro h
   ext x
-  simp [h]
+  simp only [bind_apply, h]
   rw [ENNReal.tsum_mul_right]
   rw [tsum_coe pa]
   simp only [one_mul]
@@ -146,13 +146,17 @@ noncomputable section UniformProd
 
 universe u
 
-variable {α β : Type u} [Fintype α] [Nonempty α] [DecidableEq α]
-                        [Fintype β] [Nonempty β] [DecidableEq β]
+variable {α β : Type u} [Fintype α] [Nonempty α]
+                        [Fintype β] [Nonempty β]
 
+
+open scoped Classical in
 /--
 Drawing `a` from `α` and `b` from `β` and forming the pair `(a, b)`
 yields the uniform distribution on `α × β`.
-The process can also be written
+-/
+/-
+Note: The process can also be written
 `PMF.uniformOfFintype α >>= fun x ↦ PMF.uniformOfFintype β >>= fun y ↦ PMF.pure (x, y)`
 -/
 lemma uniform_prod :
@@ -173,12 +177,15 @@ noncomputable section UniformBij
 
 universe u v
 
-variable {α : Type u} [Fintype α] [Nonempty α] [DecidableEq α]
+variable {α : Type u} [Fintype α] [Nonempty α]
          {β : Type v} [Fintype β] [Nonempty β]
 
+open scoped Classical in
 /--
 If `f : α → β` is bijective, then drawing `a` uniformly from `α`
 and applying `f` yields the uniform distribution on `β`.
+-/
+/-
 Using the monadic structure of PMFs, the process of sampling `a` from
 `α` and applying `f` is expressed as `PMF.map f (PMF.uniformOfFintype α)`.
 By definition, this is `(PMF.uniformOfFintype α).bind (PMF.pure ∘ f)`
@@ -197,7 +204,7 @@ lemma map_eq_uniform_of_bijective (f : α → β) (hf : Function.Bijective f) :
   rw [Fintype.card_of_bijective hf]
   rcases Function.bijective_iff_has_inverse'.mp hf with ⟨g, hg⟩
   simp_rw [hg]
-  simp [tsum_ite_eq]
+  simp
 
 end UniformBij
 
@@ -207,7 +214,7 @@ section UniformGroup
 Applying exponentiation to `x` drawn uniformly at random from `ZMod #G`
 yields the uniform distribution on `G`.
 -/
-theorem exp_eq_uniform_group {G : Type*} [Group G] [Fintype G] [DecidableEq G]
+theorem exp_eq_uniform_group {G : Type*} [Group G] [Fintype G]
     (g : G) (hg : Group.IsGenerator G g) :
     PMF.map (fun x ↦ g ^ x.val) (uniformZMod (Nat.card G)) = uniformOfFintype G := by
   rw [uniformZMod]
@@ -218,7 +225,7 @@ theorem exp_eq_uniform_group {G : Type*} [Group G] [Fintype G] [DecidableEq G]
 Applying exponentiation to `x` drawn uniformly at random from `ZMod #G`
 yields the uniform distribution on `G`.
 -/
-theorem exp_eq_uniform_group' {G : Type} [Group G] [Fintype G] [DecidableEq G]
+theorem exp_eq_uniform_group' {G : Type} [Group G] [Fintype G]
     (g : G) (hg : Group.IsGenerator G g) :
     (do
       let x ← uniformZMod (Nat.card G)
@@ -229,7 +236,7 @@ theorem exp_eq_uniform_group' {G : Type} [Group G] [Fintype G] [DecidableEq G]
 Applying exponentiation to `x` drawn uniformly at random from `ZMod #G`
 and multiplying by a fixed group element yields the uniform distribution on `G`.
 -/
-theorem exp_mul_eq_uniform_group {G : Type*} [Group G] [Fintype G] [DecidableEq G]
+theorem exp_mul_eq_uniform_group {G : Type*} [Group G] [Fintype G]
     (g m : G) (hg : Group.IsGenerator G g) :
     PMF.map (fun x ↦ g ^ x.val * m) (uniformZMod (Nat.card G)) = uniformOfFintype G := by
   rw [uniformZMod]
@@ -240,7 +247,7 @@ theorem exp_mul_eq_uniform_group {G : Type*} [Group G] [Fintype G] [DecidableEq 
 Applying exponentiation to `x` drawn uniformly at random from `ZMod #G`
 yields the uniform distribution on `G`.
 -/
-theorem exp_mul_eq_uniform_group' {G : Type} [Group G] [Fintype G] [DecidableEq G]
+theorem exp_mul_eq_uniform_group' {G : Type} [Group G] [Fintype G]
     (g m : G) (hg : Group.IsGenerator G g) :
     (do
       let x ← uniformZMod (Nat.card G)
