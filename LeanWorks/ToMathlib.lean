@@ -10,7 +10,7 @@ General lemmas that could be ported to Mathlib, maybe...
 -/
 
 /-
-This instance allows to infer `NeZero (Nat.card G)` when working with a Fintype group
+This instance allows to infer `NeZero (Nat.card G)` when working with a `Fintype` group
 See https://leanprover.zulipchat.com/#narrow/channel/113489-new-members/topic/instance.20synthesis.20failed
 -/
 instance {α : Type u} [Finite α] [Nonempty α] : NeZero (Nat.card α) where
