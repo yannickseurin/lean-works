@@ -149,7 +149,7 @@ lemma game₁_to_ddh₁ : Game₁ adv = ddhGame₁ (ddhReduc adv) := by
   simp_rw [bind_bind', pure_bind']
 
 omit [DecidableEq G] in
-lemma bar {α : Type} (g mb : G) (p : G → PMF α) :
+lemma rewrite_lemma {α : Type} (g mb : G) (p : G → PMF α) :
     (do
       let m ← (do
         let z ← uniformZMod #G
@@ -161,7 +161,7 @@ lemma bar {α : Type} (g mb : G) (p : G → PMF α) :
   simp
 
 omit [DecidableEq G] in
-lemma bar' {α : Type} (g : G) (p : G → PMF α) :
+lemma rewrite_lemma' {α : Type} (g : G) (p : G → PMF α) :
     (do
       let m ← (do
         let z ← uniformZMod #G
@@ -202,8 +202,8 @@ lemma game₁_to_game₂ : Game₁ adv = Game₂ adv := by
     (do
       let z ← uniformZMod #G
       p (g.val ^ z.val))
-  rw [← bar, exp_mul_eq_uniform_group' g.val mb g.property]
-  rw [← bar', exp_eq_uniform_group' g.val g.property]
+  rw [← rewrite_lemma, exp_mul_eq_uniform_group' g.val mb g.property]
+  rw [← rewrite_lemma', exp_eq_uniform_group' g.val g.property]
 
 lemma game₂_uniform : Game₂ adv = uniformOfFintype Bool := by
   simp only [Game₂]
