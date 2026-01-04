@@ -14,20 +14,23 @@
     ],   
     
     "words": [
-        "Yannick",
-        "Seurin",
-        "Mathlib",
-        "Finset",
-        "pointwise",
         "Bellare",
-        "PKE",
+        "bijective",
+        "CDH",
         "ciphertext",
         "ciphertexts",
-        "CDH",
+        "codomain",
         "DDH",
-        "bijective",
-        "distinguisher",
         "Diffie",
-        "ElGamal"
+        "distinguisher",
+        "distinguishers",
+        "ElGamal",
+        "Finset",
+        "Mathlib",
+        "PKE",
+        "PMF",
+        "pointwise",
+        "Seurin",
+        "Yannick"
     ]
 }
